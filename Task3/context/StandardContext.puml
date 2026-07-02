@@ -1,0 +1,27 @@
+@startuml
+title MVP Standard Context Diagram
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Person(newClient, "Новый клиент", "Оставляет заявку на депозит на сайте")
+Person(client, "Существующий клиент", "Открывает депозит в интернет-банке")
+Person(callManager, "Менеджер кол-центра", "Консультирует по ставкам")
+Person(beManagerDeposit, "Менеджер бэк-офиса депозитов", "Обрабатывает заявки и ведёт ставки по депозитам")
+Person(beManagerCredit, "Менеджер бэк-офиса кредитов", "Ведёт данные по кредитам")
+
+System(bankSystem, "Онлайн открытие депозитов", "Сайт, интернет-банк, сервисы депозитов и ставок, АБС и система кол-центра")
+
+System_Ext(telecom, "Телеком-оператор", "Внешний оператор отправки СМС")
+
+Rel(newClient, bankSystem, "Смотрит депозиты, подаёт заявку")
+Rel(client, bankSystem, "Смотрит ставки, открывает депозит")
+Rel(callManager, bankSystem, "Обрабатывает заявки с сайта")
+Rel(beManagerDeposit, bankSystem, "Обрабатывает заявки, ведёт ставки по депозитам")
+Rel(beManagerCredit, bankSystem, "Ведёт ставки по кредитам")
+Rel(bankSystem, telecom, "Отправляет СМС-коды и уведомления")
+Rel(telecom, client, "Доставляет СМС")
+Rel(telecom, newClient, "Доставляет СМС")
+
+@enduml

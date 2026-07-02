@@ -1,0 +1,85 @@
+@startuml
+title MVP Standard Container Diagram
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Person(newClient, "Новый клиент", "Оставляет заявку на депозит на сайте")
+Person(client, "Существующий клиент", "Открывает депозит в интернет-банке")
+Person(callManager, "Менеджер кол-центра", "Консультирует по ставкам")
+Person(beManagerDeposit, "Менеджер бэк-офиса депозитов", "Обрабатывает заявки и ведёт ставки по депозитам")
+Person(beManagerCredit, "Менеджер бэк-офиса кредитов", "Ведёт данные по кредитам")
+
+System_Ext(telecom, "Телеком-оператор", "Внешний оператор отправки СМС")
+
+Container_Boundary(bankSystem, "Банк Стандарт") {
+
+  Container(site, "Сайт", "PHP, React.js", "Список депозитов, подача заявкок новым клиентом")
+
+  Container(gateway, "API Gateway", "Распределение запросов между серверами и ЦОД")
+
+  Boundary(iBank, "Интернет-банк") {
+    Container(iBankFront, "Веб-клиент интернет-банка", "ASP.NET MVC, React.js", "Список депозитов, персонализированные ставки, подача заявки")
+    Container(iBankCore, "Ядро интернет-банка (монолит)", ".NET Framework 4.5", "Платежи и текущие счета, не изменяем, обновление у подрядчика")
+    ContainerDb(iBankDb, "БД интернет-банка", "MS SQL", "Данные интернет-банка")
+  }
+
+  Container(depositService, "Депозит сервис", "Java Spring", "Приём и ведение заявок, СМС-подтверждение, изолируем от АБС")
+  ContainerDb(depositDb, "БД заявок", "PostgreSQL", "Заявки на депозиты и их статусы")
+
+  Container(rateService, "Сервис ставок", "Java Spring", "Единый источник актуальных ставок, с разгроничением доступов")
+  ContainerDb(rateDb, "БД ставок", "PostgreSQL", "Актуальные ставки по депозитам")
+
+  Container(smsService, "СМС-сервис", "Java Spring", "Отправка СМС-кодов и уведомлений")
+  Container(smsGw, "СМС-шлюз", "", "Существующий шлюз к телеком-оператору")
+
+  ContainerQueue(kafka, "Kafka", "Kafka", "Асинхронность между сервисами и АБС")
+
+  Container(absAdapter, "Интеграционный адаптер АБС", "Java Spring", "Читает заявки из Kafka, заводит их в АБС, отдает рез")
+
+  Container(callCenter, "Система кол-центра", "Java Spring, React.js, PostgreSQL", "Обработка заявок с сайта, консультация по ставкам")
+
+  Boundary(abs, "АБС") {
+    Container(absFront, "Десктоп-клиент АБС", "Delphi", "Использует бэк-офис, подтверждение ставки и открытие депозита")
+    Container(absCore, "Ядро АБС", "PL/SQL", "Учёт депозитов, процедуры, согласование ставки")
+    ContainerDb(absDb, "БД АБС", "Oracle", "Счета, депозиты, бухгалтерия")
+  }
+}
+
+Rel(newClient, site, "Смотрит депозиты, подаёт заявку")
+Rel(client, gateway, "Работает с интернет-банком")
+Rel(gateway, iBankFront, "Маршрутизирует запросы")
+Rel(site, gateway, "Читает ставки, отправляет заявку")
+
+Rel(iBankFront, rateService, "Читает актуальные и персонализированные ставки")
+Rel(site, rateService, "Читает актуальные ставки")
+Rel(callCenter, rateService, "Читает актуальные ставки")
+
+Rel(iBankFront, depositService, "Подаёт заявку, запрашивает подтверждение")
+Rel(site, callCenter, "Создаёт заявку с сайта")
+Rel(callManager, callCenter, "Обрабатывает заявку, предлагает условия")
+
+Rel(iBankFront, iBankCore, "Платежи и текущие счета")
+Rel(iBankCore, iBankDb, "Читает и пишет")
+
+Rel(depositService, depositDb, "Читает и пишет заявки")
+Rel(depositService, smsService, "Запрашивает СМС-код и уведомления")
+Rel(depositService, kafka, "Публикует заявки, читает результаты")
+
+Rel(smsService, smsGw, "Отправляет СМС")
+Rel(smsGw, telecom, "Передаёт СМС")
+Rel(telecom, client, "Доставляет СМС")
+Rel(telecom, newClient, "Доставляет СМС")
+
+Rel(absAdapter, kafka, "Читает заявки, пишет результаты")
+Rel(absAdapter, absCore, "Заводит заявки и депозиты")
+Rel(absCore, absDb, "Читает и пишет")
+Rel(beManagerDeposit, absFront, "Обрабатывает заявку, подтверждает ставку, открывает депозит")
+Rel(absFront, absCore, "Подтверждение ставок и открытие депозитов")
+
+Rel(beManagerDeposit, rateService, "Ведёт ставки по депозитам (свой доступ)")
+Rel(beManagerCredit, rateService, "Ведёт данные по кредитам (свой доступ)")
+Rel(rateService, rateDb, "Читает и пишет")
+
+@enduml
