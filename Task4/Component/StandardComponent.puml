@@ -1,0 +1,28 @@
+@startuml
+title Standard Transfer Deposits Component Diagram
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Person(beDeposit, "Бэк-офис депозитов", "Ведёт ставки по депозитам")
+System(callCenter, "Система кол-центра банка", "Читает актуальные ставки")
+System_Ext(sftp, "SFTP-площадка", "Обмен файлами с партнёром")
+System_Ext(partnerCallCenter, "Партнёрский кол-центр", "Забирает файл со ставками")
+
+Container_Boundary(rateService, "Сервис ставок") {
+  Component(rateAdmin, "Модуль ведения ставок", "Java Spring", "Редактирование ставок")
+  Component(rateApi, "API ставок", "Java Spring", "Отдаёт актуальные ставки каналам по запросу")
+  Component(rateExporter, "Экспортёр ставок в файл", "Java Spring, планировщик", "По расписанию формирует файл ставок и выгружает на SFTP")
+  ComponentDb(rateDb, "БД ставок", "PostgreSQL", "Актуальные ставки по депозитам")
+}
+
+Rel(beDeposit, rateAdmin, "Обновляет ставки")
+Rel(rateAdmin, rateDb, "Пишет ставки")
+Rel(callCenter, rateApi, "Запрашивает актуальные ставки")
+Rel(rateApi, rateDb, "Читает ставки")
+Rel(rateExporter, rateDb, "Читает актуальные ставки")
+Rel(rateExporter, sftp, "Выгружает файл со ставками")
+Rel(partnerCallCenter, sftp, "Забирает файл со ставками")
+
+@enduml
