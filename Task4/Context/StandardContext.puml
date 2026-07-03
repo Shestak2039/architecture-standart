@@ -1,0 +1,24 @@
+@startuml
+title Standard Transfer Deposits Context Diagram
+
+top to bottom direction
+
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Component.puml
+
+Person(client, "Клиент", "Хочет уточнить условия депозита")
+Person(callManager, "Менеджер кол-центра", "Консультирует по ставкам")
+Person(partnerCallOperator, "Менеджер партнёрского кол-центра", "Консультирует по ставкам")
+
+System(rateSystem, "Сервис ставок банка «Стандарт»", "Источник актуальных депозитных ставок")
+System(callCenter, "Система кол-центра банка", "Приём звонков и консультация клиентов")
+
+System_Ext(partnerCallCenter, "Партнёрский кол-центр", "Внешняя система, подключается при перегрузке")
+
+Rel(client, callCenter, "Звонит уточнить ставку")
+Rel(client, partnerCallCenter, "Звонит уточнить ставку")
+Rel(callManager, callCenter, "Смотрит актуальные ставки")
+Rel(partnerCallOperator, partnerCallCenter, "Смотрит актуальные ставки")
+Rel(callCenter, rateSystem, "Читает актуальные ставки по API")
+Rel(rateSystem, partnerCallCenter, "Передаёт актуальные ставки файлом")
+
+@enduml
